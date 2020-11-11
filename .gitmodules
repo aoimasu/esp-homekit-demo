@@ -28,3 +28,6 @@
 [submodule "components/common/button"]
 	path = components/common/button
 	url = https://github.com/maximkulkin/esp-button
+[submodule "components/comon/UDPlogger"]
+	path = components/comon/UDPlogger
+	url = https://github.com/HomeACcessoryKid/UDPlogger
