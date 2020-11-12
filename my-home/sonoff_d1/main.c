@@ -23,12 +23,12 @@ void setup_uart() {
     uart_set_baud(0, 9600);
 }
 
-static void tsoftuart_task(void *pvParameters)
+static void lightSetTask(void *pvParameters)
 {
     uint8_t buffer[17] = { 0xAA,0x55,0x01,0x04,0x00,0x0A,0x00,0x64,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00 };
 
     buffer[6] = on ? 1 : 0;
-    buffer[7] = 100;
+    buffer[7] = bri;
 
     UDPLUO("Sent: ");
     for (uint32_t i = 0; i < sizeof(buffer); i++) {
@@ -64,7 +64,7 @@ void light_on_set(homekit_value_t value)
         return;
     }
     on = value.bool_value;
-    xTaskCreate(&tsoftuart_task, "tsoftuart1", 256, NULL, 1, NULL);
+    xTaskCreate(&lightSetTask, "lightSetTask", 256, NULL, 1, NULL);
 }
 
 homekit_value_t light_bri_get() { return HOMEKIT_INT(bri); }
@@ -77,7 +77,7 @@ void light_bri_set(homekit_value_t value)
         return;
     }
     bri = value.int_value;
-    xTaskCreate(&tsoftuart_task, "tsoftuart1", 256, NULL, 1, NULL);
+    xTaskCreate(&lightSetTask, "lightSetTask", 256, NULL, 1, NULL);
 }
 
 void light_identify_task(void *_args)
@@ -85,27 +85,12 @@ void light_identify_task(void *_args)
     //Identify Sonoff by Pulsing LED.
     for (int j = 0; j < 3; j++)
     {
-        for (int j = 0; j < 2; j++)
-        {
-            for (int i = 0; i <= 40; i++)
-            {
-                int w;
-                float b;
-                w = (UINT16_MAX - UINT16_MAX * i / 20);
-                if (i > 20)
-                {
-                    w = (UINT16_MAX - UINT16_MAX * abs(i - 40) / 20);
-                }
-                b = 100.0 * (UINT16_MAX - w) / UINT16_MAX;
-                //pwm_set_duty(w);
-                UDPLUO("Light_Identify: i = %2d b = %3.0f w = %5d\n", i, b, UINT16_MAX);
-                vTaskDelay(20 / portTICK_PERIOD_MS);
-            }
-        }
+        on = on ? false : true;
+        xTaskCreate(&lightSetTask, "lightSetTask", 256, NULL, 1, NULL);
         vTaskDelay(500 / portTICK_PERIOD_MS);
     }
-    //pwm_set_duty(0);
-    //lightSET();
+    on = false;
+    xTaskCreate(&lightSetTask, "lightSetTask", 256, NULL, 1, NULL);
     vTaskDelete(NULL);
 }
 
